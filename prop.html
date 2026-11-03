@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Проп-челлендж · Матрёшка</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap">
+<style>
+/* Мини-приложение: тёмная обложка и финал, кремовые экраны с белыми карточками, золотые акценты */
+:root{
+  --ink:#17141f; --ink-soft:#4f4a5c; --muted:#8a8494;
+  --cream:#f6f1e7; --card:#fffdf9; --line:#e6dccb;
+  --gold:#b8860b; --gold-bright:#f2c14e; --gold-wash:#f1e6cf;
+  --night:#0f0e17; --night-2:#1a1724; --night-text:#a9a3b5;
+  --danger:#b4462f;
+  --f:"Onest","Helvetica Neue",Arial,system-ui,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--cream);color:var(--ink);font-family:var(--f);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+button,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+[hidden]{display:none!important}
+
+.bar{position:sticky;top:0;z-index:5;background:var(--cream);border-bottom:1px solid var(--line);padding:10px 16px}
+.bar-in{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:14px}
+.brand{font-size:11px;font-weight:700;letter-spacing:.22em;color:var(--gold);white-space:nowrap}
+.steps{flex:1;display:flex;gap:4px}
+.steps i{flex:1;height:4px;border-radius:2px;background:var(--line);transition:background .3s}
+.steps i.done{background:var(--gold)}
+.steps i.now{background:var(--ink)}
+
+.wrap{padding:28px 16px 120px}
+.slide{max-width:760px;margin:0 auto}
+.eyebrow{display:flex;align-items:center;justify-content:center;gap:10px;font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);text-align:center}
+.eyebrow::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 0 5px color-mix(in srgb,currentColor 18%,transparent);flex:none}
+h1.t{font-size:clamp(26px,7vw,40px);line-height:1.08;letter-spacing:-.03em;font-weight:800;text-align:center;margin:12px auto 8px;max-width:20ch;text-wrap:balance}
+.lead{text-align:center;color:var(--ink-soft);font-size:16px;max-width:52ch;margin:0 auto 24px;text-wrap:balance}
+.qs{display:grid;gap:14px}
+.q{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 10px 30px -20px rgba(23,20,31,.25);min-width:0}
+.q-h{display:flex;gap:12px;align-items:baseline}
+.q-n{font-size:20px;font-weight:800;color:var(--gold);min-width:24px;font-variant-numeric:tabular-nums}
+.q-t{font-size:16.5px;font-weight:600;line-height:1.35}
+.q-hint{font-size:13px;color:var(--muted);margin-top:4px;font-weight:400}
+.q-b{margin-top:14px}
+
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{border:1.5px solid var(--line);background:var(--card);border-radius:12px;padding:9px 13px;cursor:pointer;font-size:15px;text-align:left}
+.opt[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:var(--cream)}
+.opt.multi[aria-pressed="true"]{background:var(--gold-wash);color:var(--ink);border-color:var(--gold)}
+.opt.multi::before{content:"";display:inline-block;width:14px;height:14px;border:1.5px solid currentColor;border-radius:4px;margin-right:9px;vertical-align:-2px;opacity:.5}
+.opt.multi[aria-pressed="true"]::before{background:var(--gold);border-color:var(--gold);opacity:1;box-shadow:inset 0 0 0 2px var(--gold-wash)}
+.opt.other{border-style:dashed}
+.field{width:100%;border:1.5px solid var(--line);background:var(--cream);border-radius:12px;padding:11px 14px;font-size:16px;resize:vertical;margin-top:10px}
+.field:focus{border-color:var(--gold);outline:none;background:var(--card)}
+.q-b > .field:first-child{margin-top:0}
+input.num{width:120px;font-variant-numeric:tabular-nums}
+
+.legend{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted);margin-bottom:6px}
+.dots{display:flex;gap:6px;flex-wrap:wrap}
+.dot{width:40px;height:40px;border-radius:10px;border:1.5px solid var(--line);background:var(--card);cursor:pointer;font-weight:700;font-variant-numeric:tabular-nums;padding:0}
+.dots.wide .dot{width:34px;height:38px}
+.dot[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:#fff}
+.chips .dot[aria-pressed="true"]{background:var(--ink);border-color:var(--ink)}
+.srow{display:grid;gap:8px;padding:12px 0;border-top:1px solid var(--line)}
+.srow:first-child{border-top:0;padding-top:0}
+.srow .l{font-size:15px}
+
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--cream);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
+.nav-in{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:10px}
+.nav .info{flex:1;font-size:12.5px;color:var(--muted);min-width:0}
+.btn{border:0;border-radius:999px;padding:12px 20px;font-weight:700;font-size:15px;cursor:pointer;background:var(--ink);color:var(--cream)}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.gold{background:var(--gold-bright);color:var(--night)}
+.btn:disabled{opacity:.4;cursor:default}
+
+.dark{background:radial-gradient(120% 90% at 85% 0%,#2a2218 0%,var(--night) 55%);color:#fff;border-radius:24px;padding:56px 20px;text-align:center;position:relative;overflow:hidden}
+.dark::before{content:"";position:absolute;inset:0 0 auto;height:3px;background:linear-gradient(90deg,var(--gold-bright),transparent)}
+.dark .eyebrow{color:var(--gold-bright)}
+.dark .eyebrow::before{display:none}
+.big{font-size:clamp(44px,13vw,84px);font-weight:800;letter-spacing:-.045em;line-height:.95;margin:16px 0 0}
+.big em{font-style:normal;color:var(--gold-bright);text-shadow:0 0 40px rgba(242,193,78,.35);display:block}
+.dark p{color:var(--night-text);font-size:17px;max-width:46ch;margin:20px auto 0;text-wrap:balance}
+.path{display:flex;justify-content:center;gap:8px;margin-top:24px;flex-wrap:wrap}
+.path span{border:1px solid #3a3446;border-radius:999px;padding:6px 12px;font-size:13px;color:var(--night-text)}
+.path span b{color:#fff}
+.dark .btn{margin-top:28px}
+.dark .btn.ghost{color:#fff;border-color:#3a3446;margin-top:12px}
+.hello{margin-top:18px;font-size:15px;color:#fff}
+.hello b{color:var(--gold-bright)}
+.copybox{margin-top:18px;text-align:left;background:var(--night-2);border-radius:14px;padding:14px;font-size:13px;color:var(--night-text);max-height:240px;overflow:auto;white-space:pre-wrap}
+.col{display:flex;flex-direction:column;align-items:center}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.req{color:var(--gold);margin-left:3px}
+.miss-msg{display:none;color:var(--danger);font-size:13px;margin-top:10px}
+.q.miss{border-color:var(--danger)}
+.q.miss .miss-msg{display:block}
+</style>
+</head>
+<body>
+<header class="bar" id="bar"><div class="bar-in">
+  <div class="brand">МАТРЁШКА</div>
+  <div class="steps" id="steps" aria-hidden="true"></div>
+</div></header>
+
+<main class="wrap"><div class="slide" id="view"></div></main>
+
+<nav class="nav" id="nav"><div class="nav-in">
+  <button class="btn ghost" id="back">Назад</button>
+  <div class="info" id="info"></div>
+  <button class="btn" id="next">Дальше</button>
+</div></nav>
+
+<script>
+(function(){
+/* ======== НАСТРОЙКИ ======== */
+const ENDPOINT='ВСТАВЬТЕ_СЮДА_ССЫЛКУ_ИЗ_APPS_SCRIPT'; // та же ссылка /exec, что и в index.html
+/* =========================== */
+
+const tg=window.Telegram&&window.Telegram.WebApp;
+const inTg=!!(tg&&tg.initData);
+const tgUser=inTg&&tg.initDataUnsafe?tg.initDataUnsafe.user:null;
+if(tg){
+  try{tg.ready();tg.expand()}catch(e){}
+  try{if(tg.isVersionAtLeast('6.1')){tg.setHeaderColor('#f6f1e7');tg.setBackgroundColor('#f6f1e7')}}catch(e){}
+  try{if(tg.isVersionAtLeast('7.7'))tg.disableVerticalSwipes()}catch(e){}
+}
+function closingConfirm(on){try{if(inTg&&tg.isVersionAtLeast('6.2'))on?tg.enableClosingConfirmation():tg.disableClosingConfirmation()}catch(e){}}
+
+const OTHER='Свой вариант';
+const STEPS=[
+ {id:'cover'},
+ {id:'learn',eb:'Шаг 1 · обучение и журналы',title:'Где вы сейчас',lead:'Все вопросы обязательные. Если подходящего варианта нет, нажмите «Свой вариант» и впишите ответ.',qs:[
+   {k:'nick',type:'text',q:'Ваш ник ТГ в клубе Матрёшка?',ph:'@ник'},
+   {k:'time',type:'text',q:'Сколько времени обучаетесь в клубе Матрёшка?',ph:'Например, 3 месяца'},
+   {k:'backtest',type:'choice',q:'Сколько сделок занесено в журнал бектестов?',opts:['до 10','10-30','30-50']},
+   {k:'deals30',type:'choice',q:'Сколько сделок открыли за последние 30 дней?',opts:['До 100','До 200','Больше 200']},
+   {k:'live',type:'text',q:'Количество сделок в журнале торговли на живом графике?',ph:'Число или примерно'}
+ ]},
+ {id:'exp',eb:'Шаг 2 · опыт',title:'Ваш опыт в трейдинге',lead:'Пишите как есть: и удачи, и просадки одинаково важны.',qs:[
+   {k:'exp',type:'text',q:'Ваш опыт в трейдинге?',ph:'Сколько лет или месяцев, как начинали',area:true},
+   {k:'assets',type:'multi',q:'Опыт в торговле активами:',hint:'Можно выбрать несколько',opts:['Только золото','Форекс - валюты','Крипта','Акции']},
+   {k:'propExp',type:'text',q:'Ваш опыт в торговле на свой или проп-счёт?',ph:'Свой счёт, проп-компании, проходили ли челленджи',area:true},
+   {k:'dd',type:'text',q:'Максимальная просадка в % к депозиту? Как выравнивали счёт, какой итог?',ph:'Например: −15%, снизил риск, вышел в ноль за 2 месяца',area:true}
+ ]},
+ {id:'ready',eb:'Шаг 3 · готовность',title:'Готовы к челленджу?',lead:'Система Матрёшка: риск 0,3% на сделку, до трёх стопов.',qs:[
+   {k:'readiness',type:'rate',q:'Оцените свою готовность в прохождении проп-челленджа по системе Матрёшка (0,3% риск, до 3-х стопов) от 1 до 10',from:1,to:10,lo:'не готов',hi:'полностью готов'},
+   {k:'improve',type:'text',q:'Что по вашему поможет улучшить/повлияет на результаты в прохождении проп-челленджа?',area:true},
+   {k:'publish',type:'choice',q:'Согласны на публикацию ваших результатов в отчёте проп-челленджа?',opts:['Да','Нет']},
+   {k:'comments',type:'text',q:'Ваши комментарии, вопросы, пожелания',area:true}
+ ]},
+ {id:'done'}
+];
+const FORM_STEPS=STEPS.length-2;
+
+let A={},step=0,sent=false,sendErr='';
+const KEY='matr-prop-v1';
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&s.A){A=s.A;sent=!!s.sent;step=sent?0:Math.min(s.step||0,STEPS.length-2)}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({A,step,sent}))}catch(e){}}
+if(tgUser&&!A.nick&&tgUser.username)A.nick='@'+tgUser.username;
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const selOf=v=>v&&v.sel;
+function findQ(k){for(const S of STEPS)for(const q of (S.qs||[]))if(q.k===k)return q}
+
+function answered(q){
+  const v=A[q.k];
+  if(q.type==='text')return !!(v&&String(v).trim());
+  if(q.type==='rate')return v!=null;
+  const multi=q.type==='multi';const sel=multi?(selOf(v)||[]):selOf(v);
+  if(multi?!sel.length:!sel)return false;
+  const otherOn=multi?sel.includes(OTHER):sel===OTHER;
+  return !otherOn||!!(v.other&&v.other.trim());
+}
+
+function renderSteps(){let h='';for(let i=1;i<=FORM_STEPS;i++)h+=`<i class="${i<step?'done':i===step?'now':''}"></i>`;$('#steps').innerHTML=h}
+function render(){
+  renderSteps();
+  const v=$('#view');const S=STEPS[step];
+  $('#nav').hidden=step===0||step===STEPS.length-1;
+  $('#bar').hidden=step===0||step===STEPS.length-1;
+  if(S.id==='cover'){v.innerHTML=cover();$('#start').onclick=()=>{step=1;closingConfirm(true);save();render()};window.scrollTo(0,0);return}
+  if(S.id==='done'){v.innerHTML=done();bindDone();window.scrollTo(0,0);return}
+  let n=0;
+  v.innerHTML=`<div class="eyebrow">${esc(S.eb)}</div><h1 class="t">${esc(S.title)}</h1><p class="lead">${esc(S.lead)}</p><div class="qs">${S.qs.map(q=>qHtml(q,++n)).join('')}</div>`;
+  bind(v);
+  const last=step===STEPS.length-2;
+  $('#next').textContent=last?'Отправить':'Дальше';
+  $('#next').className='btn'+(last?' gold':'');
+  $('#back').disabled=step<=1;
+  $('#info').textContent='Шаг '+step+' из '+FORM_STEPS;
+  window.scrollTo(0,0);
+}
+function dots(k,from,to,cur){
+  let h=`<div class="dots ${to-from>5?'wide':''}">`;
+  for(let i=from;i<=to;i++)h+=`<button type="button" class="dot" data-r="${k}" data-v="${i}" aria-pressed="${cur===i}">${i}</button>`;
+  return h+'</div>';
+}
+function qHtml(q,i){
+  let b='';const v=A[q.k];
+  if(q.type==='text'){b=q.area?`<textarea class="field" rows="3" id="f-${q.k}" data-k="${q.k}" placeholder="${esc(q.ph||'Ваш ответ')}">${esc(v||'')}</textarea>`:`<input class="field" id="f-${q.k}" data-k="${q.k}" value="${esc(v||'')}" placeholder="${esc(q.ph||'Ваш ответ')}">`}
+  else if(q.type==='rate'){b=`<div class="legend"><span>${q.from} — ${esc(q.lo)}</span><span>${q.to} — ${esc(q.hi)}</span></div>${dots(q.k,q.from,q.to,v)}`}
+  else{
+    const multi=q.type==='multi';const sel=multi?(selOf(v)||[]):selOf(v);
+    const otherOn=multi?sel.includes(OTHER):sel===OTHER;
+    b=`<div class="opts">`+q.opts.concat([OTHER]).map(o=>{const on=multi?sel.includes(o):sel===o;return `<button type="button" class="opt ${multi?'multi':''} ${o===OTHER?'other':''}" aria-pressed="${on}" data-k="${q.k}" data-o="${esc(o)}" data-m="${multi?1:0}">${esc(o)}</button>`}).join('')+`</div>`+
+      `<input class="field" id="o-${q.k}" data-other="${q.k}" placeholder="Впишите свой ответ" value="${esc((v&&v.other)||'')}" ${otherOn?'':'hidden'}>`;
+  }
+  return `<div class="q" id="q-${q.k}"><div class="q-h"><div class="q-n">${i}</div><div><div class="q-t">${esc(q.q)}<span class="req">*</span></div>${q.hint?`<div class="q-hint">${esc(q.hint)}</div>`:''}</div></div><div class="q-b">${b}</div><div class="miss-msg">Ответьте на этот вопрос</div></div>`;
+}
+function unmark(k){const el=document.getElementById('q-'+k);if(el)el.classList.remove('miss')}
+function bind(v){
+  v.querySelectorAll('[data-k]').forEach(el=>{
+    if(el.tagName==='BUTTON'){el.addEventListener('click',()=>{
+      const k=el.dataset.k,o=el.dataset.o,m=el.dataset.m==='1';
+      if(m){const cur=selOf(A[k])||[];A[k]={...(A[k]||{}),sel:cur.includes(o)?cur.filter(x=>x!==o):cur.concat(o)}}
+      else A[k]={...(A[k]||{}),sel:selOf(A[k])===o?null:o};
+      save();unmark(k);const s=A[k].sel;
+      v.querySelectorAll(`button[data-k="${k}"]`).forEach(b=>b.setAttribute('aria-pressed',m?s.includes(b.dataset.o):s===b.dataset.o));
+      const oi=v.querySelector(`#o-${k}`);const on=m?s.includes(OTHER):s===OTHER;oi.hidden=!on;if(on&&o===OTHER)oi.focus();
+    })}
+    else el.addEventListener('input',()=>{A[el.dataset.k]=el.value;save();unmark(el.dataset.k)});
+  });
+  v.querySelectorAll('[data-other]').forEach(el=>el.addEventListener('input',()=>{const k=el.dataset.other;A[k]={...(A[k]||{}),other:el.value};save();unmark(k)}));
+  v.querySelectorAll('[data-r]').forEach(el=>el.addEventListener('click',()=>{
+    const k=el.dataset.r,val=+el.dataset.v;A[k]=A[k]===val?null:val;save();unmark(k);
+    v.querySelectorAll(`[data-r="${k}"]`).forEach(b=>b.setAttribute('aria-pressed',+b.dataset.v===A[k]));
+  }));
+}
+
+function cover(){
+  const started=Object.keys(A).some(k=>k!=='nick');
+  const hi=tgUser&&tgUser.first_name?`<div class="hello">Привет, <b>${esc(tgUser.first_name)}</b></div>`:'';
+  return `<section class="dark"><div class="eyebrow">МАТРЁШКА · КЛУБ</div>
+  <div class="big">Проп-<em>челлендж</em></div>${hi}
+  <p>С 4 ноября (среда) стартует первая волна проп-челленджа для участников клуба. Участие по желанию. Отвечайте честно, как есть: ответы помогут собрать всех участников и дать больше пользы в процессе.</p>
+  <div class="path"><span>старт <b>4 ноября</b></span><span>риск <b>0,3%</b></span><span>до <b>3</b> стопов</span></div>
+  <button class="btn gold" id="start">${sent?'Изменить ответы':started?'Продолжить':'Заполнить анкету'}</button></section>`;
+}
+function done(){
+  if(sent)return `<section class="dark"><div class="eyebrow">ГОТОВО</div><div class="big">Анкета<em>принята</em></div>
+    <p>Ответы у куратора. Подробности о старте первой волны появятся в чате клуба.</p>
+    <div class="col">${inTg?'<button class="btn gold" id="close">Закрыть</button>':''}<button class="btn ghost" id="edit">Изменить ответы</button></div></section>`;
+  return `<section class="dark"><div class="eyebrow">НЕ ОТПРАВИЛОСЬ</div><div class="big">Почти<em>готово</em></div>
+    <p>Отправить не получилось${sendErr?': '+esc(sendErr):''}. Попробуйте ещё раз. Если снова не выйдет, скопируйте ответы и пришлите куратору в личные сообщения.</p>
+    <div class="col"><button class="btn gold" id="retry">Отправить ещё раз</button><button class="btn ghost" id="copy">Скопировать ответы</button><button class="btn ghost" id="edit">Вернуться к ответам</button></div>
+    <div class="copybox" id="copytxt">${esc(plainText())}</div></section>`;
+}
+function bindDone(){
+  const c=$('#close');if(c)c.onclick=()=>tg.close();
+  $('#edit').onclick=()=>{step=1;closingConfirm(true);render()};
+  const r=$('#retry');if(r)r.onclick=()=>{r.disabled=true;r.textContent='Отправляю…';submit()};
+  const cp=$('#copy');if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(plainText());cp.textContent='Скопировано'}catch(e){const rg=document.createRange();rg.selectNodeContents($('#copytxt'));const s=getSelection();s.removeAllRanges();s.addRange(rg);cp.textContent='Выделено, скопируйте'}};
+}
+
+function fmt(q,v){
+  if(v==null||v==='')return '';
+  if(q.type==='text'||q.type==='rate')return String(v);
+  const sel=Array.isArray(v.sel)?v.sel:(v.sel?[v.sel]:[]);
+  return sel.map(x=>x===OTHER?('Свой: '+(v.other||'—')):x).join('; ');
+}
+function flatPairs(){const out=[];STEPS.forEach(S=>{if(S.qs)S.qs.forEach(q=>out.push([q.q,fmt(q,A[q.k])]))});return out}
+function plainText(){return flatPairs().map(p=>p[0]+'\n→ '+(p[1]===''?'нет ответа':p[1])).join('\n\n')}
+
+$('#back').onclick=()=>{if(step>1){step--;save();render()}};
+$('#next').onclick=()=>{
+  const missing=STEPS[step].qs.filter(q=>!answered(q));
+  if(missing.length){
+    missing.forEach(q=>document.getElementById('q-'+q.k).classList.add('miss'));
+    document.getElementById('q-'+missing[0].k).scrollIntoView({behavior:'smooth',block:'center'});
+    $('#info').textContent='Ответьте на отмеченные вопросы';
+    try{if(inTg&&tg.isVersionAtLeast('6.1'))tg.HapticFeedback.notificationOccurred('warning')}catch(e){}
+    return;
+  }
+  if(step<STEPS.length-2){step++;save();render();return}
+  const b=$('#next');b.disabled=true;b.textContent='Отправляю…';submit();
+};
+async function submit(){
+  const body=JSON.stringify({form:'prop',initData:inTg?tg.initData:'',answers:flatPairs()});
+  sent=false;sendErr='';
+  if(!/^https:\/\/script\.google\.com\//.test(ENDPOINT)){sendErr='ссылка для отправки ещё не настроена'}
+  else{
+    let r=null;
+    try{r=await fetch(ENDPOINT,{method:'POST',body})}
+    catch(e){try{await fetch(ENDPOINT,{method:'POST',mode:'no-cors',body});sent=true}catch(e2){sendErr='нет связи, проверьте интернет'}}
+    if(r){try{const j=await r.json();if(j.ok)sent=true;else sendErr=j.error||'таблица не приняла ответ'}catch(e){sendErr='проверьте доступ к скрипту: «Все»'}}
+  }
+  const b=$('#next');b.disabled=false;
+  if(sent)closingConfirm(false);
+  try{if(inTg&&tg.isVersionAtLeast('6.1'))tg.HapticFeedback.notificationOccurred(sent?'success':'error')}catch(e){}
+  step=STEPS.length-1;save();render();
+}
+
+render();
+})();
+</script>
+</body>
+</html>
