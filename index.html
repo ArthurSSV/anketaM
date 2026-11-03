@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Анкета ученика · Матрёшка</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap">
+<style>
+/* Мини-приложение: тёмная обложка и финал, кремовые экраны с белыми карточками, золотые акценты */
+:root{
+  --ink:#17141f; --ink-soft:#4f4a5c; --muted:#8a8494;
+  --cream:#f6f1e7; --card:#fffdf9; --line:#e6dccb;
+  --gold:#b8860b; --gold-bright:#f2c14e; --gold-wash:#f1e6cf;
+  --night:#0f0e17; --night-2:#1a1724; --night-text:#a9a3b5;
+  --danger:#b4462f;
+  --f:"Onest","Helvetica Neue",Arial,system-ui,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--cream);color:var(--ink);font-family:var(--f);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+button,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+[hidden]{display:none!important}
+
+.bar{position:sticky;top:0;z-index:5;background:var(--cream);border-bottom:1px solid var(--line);padding:10px 16px}
+.bar-in{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:14px}
+.brand{font-size:11px;font-weight:700;letter-spacing:.22em;color:var(--gold);white-space:nowrap}
+.steps{flex:1;display:flex;gap:4px}
+.steps i{flex:1;height:4px;border-radius:2px;background:var(--line);transition:background .3s}
+.steps i.done{background:var(--gold)}
+.steps i.now{background:var(--ink)}
+
+.wrap{padding:28px 16px 120px}
+.slide{max-width:760px;margin:0 auto}
+.eyebrow{display:flex;align-items:center;justify-content:center;gap:10px;font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);text-align:center}
+.eyebrow::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 0 5px color-mix(in srgb,currentColor 18%,transparent);flex:none}
+h1.t{font-size:clamp(26px,7vw,40px);line-height:1.08;letter-spacing:-.03em;font-weight:800;text-align:center;margin:12px auto 8px;max-width:20ch;text-wrap:balance}
+.lead{text-align:center;color:var(--ink-soft);font-size:16px;max-width:52ch;margin:0 auto 24px;text-wrap:balance}
+.qs{display:grid;gap:14px}
+.q{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 10px 30px -20px rgba(23,20,31,.25);min-width:0}
+.q-h{display:flex;gap:12px;align-items:baseline}
+.q-n{font-size:20px;font-weight:800;color:var(--gold);min-width:24px;font-variant-numeric:tabular-nums}
+.q-t{font-size:16.5px;font-weight:600;line-height:1.35}
+.q-hint{font-size:13px;color:var(--muted);margin-top:4px;font-weight:400}
+.q-b{margin-top:14px}
+
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{border:1.5px solid var(--line);background:var(--card);border-radius:12px;padding:9px 13px;cursor:pointer;font-size:15px;text-align:left}
+.opt[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:var(--cream)}
+.opt.multi[aria-pressed="true"]{background:var(--gold-wash);color:var(--ink);border-color:var(--gold)}
+.opt.multi::before{content:"";display:inline-block;width:14px;height:14px;border:1.5px solid currentColor;border-radius:4px;margin-right:9px;vertical-align:-2px;opacity:.5}
+.opt.multi[aria-pressed="true"]::before{background:var(--gold);border-color:var(--gold);opacity:1;box-shadow:inset 0 0 0 2px var(--gold-wash)}
+.opt.other{border-style:dashed}
+.field{width:100%;border:1.5px solid var(--line);background:var(--cream);border-radius:12px;padding:11px 14px;font-size:16px;resize:vertical;margin-top:10px}
+.field:focus{border-color:var(--gold);outline:none;background:var(--card)}
+.q-b > .field:first-child{margin-top:0}
+input.num{width:120px;font-variant-numeric:tabular-nums}
+
+.legend{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted);margin-bottom:6px}
+.dots{display:flex;gap:6px;flex-wrap:wrap}
+.dot{width:40px;height:40px;border-radius:10px;border:1.5px solid var(--line);background:var(--card);cursor:pointer;font-weight:700;font-variant-numeric:tabular-nums;padding:0}
+.dots.wide .dot{width:34px;height:38px}
+.dot[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:#fff}
+.chips .dot[aria-pressed="true"]{background:var(--ink);border-color:var(--ink)}
+.srow{display:grid;gap:8px;padding:12px 0;border-top:1px solid var(--line)}
+.srow:first-child{border-top:0;padding-top:0}
+.srow .l{font-size:15px}
+
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--cream);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
+.nav-in{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:10px}
+.nav .info{flex:1;font-size:12.5px;color:var(--muted);min-width:0}
+.btn{border:0;border-radius:999px;padding:12px 20px;font-weight:700;font-size:15px;cursor:pointer;background:var(--ink);color:var(--cream)}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.gold{background:var(--gold-bright);color:var(--night)}
+.btn:disabled{opacity:.4;cursor:default}
+
+.dark{background:radial-gradient(120% 90% at 85% 0%,#2a2218 0%,var(--night) 55%);color:#fff;border-radius:24px;padding:56px 20px;text-align:center;position:relative;overflow:hidden}
+.dark::before{content:"";position:absolute;inset:0 0 auto;height:3px;background:linear-gradient(90deg,var(--gold-bright),transparent)}
+.dark .eyebrow{color:var(--gold-bright)}
+.dark .eyebrow::before{display:none}
+.big{font-size:clamp(44px,13vw,84px);font-weight:800;letter-spacing:-.045em;line-height:.95;margin:16px 0 0}
+.big em{font-style:normal;color:var(--gold-bright);text-shadow:0 0 40px rgba(242,193,78,.35);display:block}
+.dark p{color:var(--night-text);font-size:17px;max-width:46ch;margin:20px auto 0;text-wrap:balance}
+.path{display:flex;justify-content:center;gap:8px;margin-top:24px;flex-wrap:wrap}
+.path span{border:1px solid #3a3446;border-radius:999px;padding:6px 12px;font-size:13px;color:var(--night-text)}
+.path span b{color:#fff}
+.dark .btn{margin-top:28px}
+.dark .btn.ghost{color:#fff;border-color:#3a3446;margin-top:12px}
+.hello{margin-top:18px;font-size:15px;color:#fff}
+.hello b{color:var(--gold-bright)}
+.copybox{margin-top:18px;text-align:left;background:var(--night-2);border-radius:14px;padding:14px;font-size:13px;color:var(--night-text);max-height:240px;overflow:auto;white-space:pre-wrap}
+.col{display:flex;flex-direction:column;align-items:center}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="bar" id="bar"><div class="bar-in">
+  <div class="brand">МАТРЁШКА</div>
+  <div class="steps" id="steps" aria-hidden="true"></div>
+</div></header>
+
+<main class="wrap"><div class="slide" id="view"></div></main>
+
+<nav class="nav" id="nav"><div class="nav-in">
+  <button class="btn ghost" id="back">Назад</button>
+  <div class="info" id="info"></div>
+  <button class="btn" id="next">Дальше</button>
+</div></nav>
+
+<script>
+(function(){
+/* ======== НАСТРОЙКИ ======== */
+const ENDPOINT='https://script.google.com/macros/s/AKfycbwhmwI5KArqsla1AOdAk8Zz7ZIJE9g9ISp2ESNcsy-G7eI3GjgBX_fu-i-LbxlaBVd7/exec'; // ссылка /exec из шага 4 инструкции
+const LECTURES=18;                                   // сколько лекций в клубе
+/* =========================== */
+
+const tg=window.Telegram&&window.Telegram.WebApp;
+const inTg=!!(tg&&tg.initData);
+const tgUser=inTg&&tg.initDataUnsafe?tg.initDataUnsafe.user:null;
+if(tg){
+  try{tg.ready();tg.expand()}catch(e){}
+  try{if(tg.isVersionAtLeast('6.1')){tg.setHeaderColor('#f6f1e7');tg.setBackgroundColor('#f6f1e7')}}catch(e){}
+  try{if(tg.isVersionAtLeast('7.7'))tg.disableVerticalSwipes()}catch(e){}
+}
+function closingConfirm(on){try{if(inTg&&tg.isVersionAtLeast('6.2'))on?tg.enableClosingConfirmation():tg.disableClosingConfirmation()}catch(e){}}
+
+const OTHER='Свой вариант';
+const NUMS=Array.from({length:LECTURES},(_,i)=>i+1);
+const STEPS=[
+ {id:'cover'},
+ {id:'me',eb:'Блок 1 · о себе',title:'Кто вы и сколько времени у вас есть',lead:'Выберите вариант или впишите свой.',qs:[
+   {k:'name',type:'text',q:'Имя или ник в чате клуба',ph:'Например, Артур'},
+   {k:'joined',type:'choice',q:'Когда вы пришли в клуб?',opts:['С самого начала, был на живых лекциях','В первые 1–2 месяца','Позже, догоняю по записям','Меньше месяца назад']},
+   {k:'exp',type:'choice',q:'Был ли у вас опыт трейдинга до клуба?',opts:['Нет, начинаю с нуля','Пробовал сам, без системы','Торговал другие активы: валюта, крипта, акции','Уже торговал золото']},
+   {k:'hours',type:'choice',q:'Сколько времени в неделю вы реально уделяете обучению и рынку?',opts:['Меньше 2 часов','2–5 часов','5–10 часов','Больше 10 часов']},
+   {k:'tod',type:'choice',multi:true,q:'В какое время суток вам удобнее торговать и смотреть график?',hint:'Можно выбрать несколько',opts:['Утро','День','Вечер','Ночь','Только выходные']},
+   {k:'why',type:'choice',q:'Трейдинг для вас сейчас — это:',opts:['Интерес, хобби','Дополнительный доход в будущем','Цель сделать основным доходом']}
+ ]},
+ {id:'lect',eb:'Блок 2 · лекции и ДЗ',title:'Где вы остановились',lead:'Самый важный блок: по нему куратор поймёт, с какого места вам помогать.',qs:[
+   {k:'seen',type:'nums',q:'Отметьте лекции, которые вы посмотрели полностью'},
+   {k:'hwDone',type:'nums',q:'Отметьте лекции, по которым сделали домашнее задание'},
+   {k:'lecture',type:'number',q:'На какой лекции вы сейчас остановились?',hint:'Номер лекции'},
+   {k:'lastStudy',type:'choice',q:'Когда вы последний раз смотрели лекцию или делали ДЗ?',opts:['На этой неделе','1–2 недели назад','Месяц назад','Больше месяца назад']},
+   {k:'hwHow',type:'choice',q:'Как вы делаете домашние задания?',opts:['Делаю сразу после лекции','Откладываю, и они копятся','Смотрю лекции, но ДЗ пропускаю','Не делаю совсем']},
+   {k:'hwSend',type:'choice',q:'Отправляете ли вы ДЗ куратору на проверку?',opts:['Всегда','Иногда','Нет, делаю для себя','Не знал, что можно или нужно']},
+   {k:'hardHw',type:'text',q:'Какое ДЗ далось тяжелее всего и почему?',ph:'Номер лекции и что именно было сложно',area:true},
+   {k:'rewatch',type:'text',q:'Какую лекцию хотелось бы разобрать ещё раз вживую?',ph:'Номер или тема'},
+   {k:'catchup',type:'choice',q:'Для тех, кто пришёл позже: к какому сроку вы реально догоните все лекции?',opts:['Уже догнал','За 1–2 недели','За месяц','Больше месяца','Не знаю']}
+ ]},
+ {id:'know',eb:'Блок 3 · самооценка',title:'Насколько уверенно вы знаете темы',lead:'1 — не знаю, 5 — уверенно применяю.',qs:[
+   {k:'skills',type:'scale',q:'Оцените себя по каждой теме',items:['Что влияет на цену золота: доллар, ставки ФРС, инфляция, геополитика','Торговые сессии и время активности золота','Работа с терминалом: открыть, закрыть, выставить стоп и тейк','Определение тренда и структуры рынка','Уровни поддержки и сопротивления','Свечной анализ и паттерны','Индикаторы, которые использует клуб','Работа на нескольких таймфреймах','Точки входа по стратегии клуба','Расчёт лота и риска на сделку','Соотношение риск / прибыль','Экономический календарь и новости: NFP, CPI, ФРС','Ведение торгового журнала']},
+   {k:'strategy',type:'text',q:'Объясните стратегию клуба своими словами в 2–3 предложениях',ph:'Как получится, без подсказок',area:true},
+   {k:'entry',type:'text',q:'Опишите правила входа в сделку, которые вы используете',area:true},
+   {k:'stop',type:'text',q:'Где вы ставите стоп-лосс и почему?',area:true},
+   {k:'risk',type:'choice',q:'Какой процент депозита вы рискуете в одной сделке?',opts:['До 1%','1–2%','2–5%','Больше 5%','Не считаю']},
+   {k:'unclear',type:'text',q:'Какая тема для вас сейчас самая непонятная?'}
+ ]},
+ {id:'trade',eb:'Блок 4 · практика',title:'Как вы торгуете сейчас',lead:'Цифры примерные, точность не нужна.',qs:[
+   {k:'where',type:'choice',q:'Где вы сейчас торгуете?',opts:['Пока не торгую, только учусь','На демо-счёте','На реальном счёте с небольшой суммой','На реальном счёте полноценно']},
+   {k:'deals',type:'choice',q:'Сколько сделок вы сделали за последние 30 дней?',opts:['0','1–10','11–30','Больше 30']},
+   {k:'journal',type:'choice',q:'Ведёте ли вы торговый журнал: скрины, причина входа, результат?',opts:['Да, по каждой сделке','Иногда','Нет']},
+   {k:'month',type:'choice',q:'Какой примерный результат за последний месяц?',opts:['В плюсе','Около нуля','В минусе','Не считал']},
+   {k:'byRules',type:'choice',q:'Сколько ваших сделок были строго по стратегии клуба?',opts:['Почти все','Больше половины','Меньше половины','Не знаю']},
+   {k:'review',type:'choice',q:'Разбираете ли вы свои сделки после закрытия?',opts:['Да, всегда','Только убыточные','Нет']},
+   {k:'share',type:'choice',q:'Делились ли вы сделками в чате клуба для разбора?',opts:['Да, регулярно','Пару раз','Нет, стесняюсь или боюсь критики','Нет, не вижу смысла']},
+   {k:'best',type:'text',q:'Ваша лучшая сделка: что вы сделали правильно?',area:true},
+   {k:'worst',type:'text',q:'Ваша худшая сделка: какую ошибку вы в ней видите сейчас?',area:true},
+   {k:'nextStage',type:'text',q:'Что мешает перейти на следующий этап: с демо на реал, с маленького счёта на больший?',area:true}
+ ]},
+ {id:'psy',eb:'Блок 5 · психология',title:'Что с вами случалось за последний месяц',lead:'Отметьте всё, что узнаёте в себе. Это помогает, а не оценивает.',qs:[
+   {k:'errors',type:'multi',q:'Что из этого было?',hint:'Можно выбрать несколько',opts:['Входил в сделку без сигнала, на эмоциях','Двигал или убирал стоп-лосс','Закрывал прибыльную сделку слишком рано от страха','Пытался отыграться после убытка','Увеличивал лот после серии убытков','Торговал на сильных новостях без плана','Пропускал хороший вход из-за сомнений','Ничего из этого']},
+   {k:'discipline',type:'rate',q:'Оцените свою дисциплину в следовании правилам',lo:'не соблюдаю',hi:'строго по правилам'},
+   {k:'minusFeel',type:'choice',q:'Что вы чувствуете, когда сделка уходит в минус?',opts:['Спокойно, это часть работы','Тревогу, хочется закрыть','Злость, хочется отыграться','Ступор, не знаю, что делать']},
+   {k:'limit',type:'choice',q:'Есть ли у вас дневной лимит убытка или количества сделок?',opts:['Да, и соблюдаю','Да, но часто нарушаю','Нет']},
+   {k:'knock',type:'text',q:'Что чаще всего выбивает вас из колеи?'}
+ ]},
+ {id:'block',eb:'Блок 6 · препятствия',title:'Что мешает двигаться',lead:'Куратор прочитает каждый ответ лично.',qs:[
+   {k:'obstacles',type:'multi',q:'Что больше всего мешает вам учиться сейчас?',hint:'Можно выбрать несколько',opts:['Нехватка времени: работа, семья','Не понимаю материал, а спросить неловко','Много лекций накопилось, не знаю с чего начать','Нет мотивации, пропал интерес','Были убытки, опустились руки','Не хватает практики и разборов','Теряюсь в потоке сообщений в чате','Технические сложности: терминал, брокер, доступ к записям']},
+   {k:'quit',type:'choice',q:'Был ли момент, когда вы хотели бросить?',opts:['Нет','Были мысли','Да, почти бросил']},
+   {k:'quitWhy',type:'text',q:'Если был, что тогда произошло?',area:true},
+   {k:'help',type:'text',q:'Если бы куратор мог помочь вам одной вещью прямо сейчас, что бы это было?',area:true},
+   {k:'askNever',type:'text',q:'Вопрос, который вы давно хотели задать, но так и не задали',area:true}
+ ]},
+ {id:'goal',eb:'Блок 7 · цели',title:'Куда вы идёте',lead:'Чем конкретнее, тем проще куратору помочь.',qs:[
+   {k:'cameFor',type:'text',q:'Зачем вы пришли в клуб? Что хотели получить?',area:true},
+   {k:'in3',type:'choice',q:'Где вы хотите быть через 3 месяца?',opts:['Досмотреть все лекции и сделать ДЗ','Набрать 50+ сделок на демо по стратегии','Выйти на реальный счёт','Стабильный плюс на реальном счёте']},
+   {k:'in12',type:'text',q:'А через 12 месяцев?'},
+   {k:'burn',type:'rate',q:'Насколько вы сейчас «горите» обучением?',lo:'совсем остыл',hi:'горю'},
+   {k:'returnInt',type:'text',q:'Что вернуло бы вам интерес, если он пропал?'},
+   {k:'commitLect',type:'text',q:'Обязательство до следующей встречи: какие лекции досмотрю и к какому сроку',ph:'Например: лекции 5–6 до воскресенья'},
+   {k:'commitHw',type:'text',q:'Какие ДЗ сделаю и отправлю куратору',ph:'Например: ДЗ 5 до пятницы'},
+   {k:'commitDeals',type:'text',q:'Сколько сделок сделаю и выложу разбор в чат',ph:'Например: 10 сделок на демо'},
+   {k:'buddy',type:'choice',q:'Хотите ли вы партнёра по обучению из клуба на вашем уровне?',opts:['Да','Нет','Возможно']}
+ ]},
+ {id:'fb',eb:'Блок 8 · обратная связь',title:'Что улучшить в клубе',lead:'Последний блок. Пишите как есть.',qs:[
+   {k:'format',type:'multi',q:'Какой формат вам полезнее всего?',hint:'Выберите до трёх',max:3,opts:['Записанные лекции','Живые эфиры с куратором','Разборы сделок участников','Совместная торговля в прямом эфире','Проверка ДЗ с подробным комментарием','Мини-группы по уровням','Индивидуальные созвоны']},
+   {k:'rClarity',type:'rate',q:'Понятность лекций',lo:'непонятно',hi:'всё ясно'},
+   {k:'rPace',type:'rate',q:'Скорость подачи материала',lo:'слишком быстро',hi:'в самый раз'},
+   {k:'rSupport',type:'rate',q:'Поддержка в чате',lo:'не хватает',hi:'отличная'},
+   {k:'missing',type:'text',q:'Чего не хватает в клубе?',area:true},
+   {k:'change',type:'text',q:'Что бы вы убрали или изменили?',area:true},
+   {k:'nps',type:'rate',q:'Насколько вероятно, что вы порекомендуете клуб другу?',from:0,to:10,lo:'точно нет',hi:'точно да'},
+   {k:'extra',type:'text',q:'Что ещё куратору стоит знать о вас?',area:true}
+ ]},
+ {id:'done'}
+];
+const FORM_STEPS=STEPS.length-2;
+
+let A={},step=0,sent=false,sendErr='';
+const KEY='matr-tg-anketa-v1';
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&s.A){A=s.A;sent=!!s.sent;step=sent?0:Math.min(s.step||0,STEPS.length-2)}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({A,step,sent}))}catch(e){}}
+if(tgUser&&!A.name){A.name=[tgUser.first_name,tgUser.last_name].filter(Boolean).join(' ')}
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const selOf=v=>v&&v.sel;
+function findQ(k){for(const S of STEPS)for(const q of (S.qs||[]))if(q.k===k)return q}
+
+function renderSteps(){let h='';for(let i=1;i<=FORM_STEPS;i++)h+=`<i class="${i<step?'done':i===step?'now':''}"></i>`;$('#steps').innerHTML=h}
+function render(){
+  renderSteps();
+  const v=$('#view');const S=STEPS[step];
+  $('#nav').hidden=step===0||step===STEPS.length-1;
+  $('#bar').hidden=step===0||step===STEPS.length-1;
+  if(S.id==='cover'){v.innerHTML=cover();$('#start').onclick=()=>{step=1;closingConfirm(true);save();render()};window.scrollTo(0,0);return}
+  if(S.id==='done'){v.innerHTML=done();bindDone();window.scrollTo(0,0);return}
+  let n=0;
+  v.innerHTML=`<div class="eyebrow">${esc(S.eb)}</div><h1 class="t">${esc(S.title)}</h1><p class="lead">${esc(S.lead)}</p><div class="qs">${S.qs.map(q=>qHtml(q,++n)).join('')}</div>`;
+  bind(v);
+  const last=step===STEPS.length-2;
+  $('#next').textContent=last?'Отправить':'Дальше';
+  $('#next').className='btn'+(last?' gold':'');
+  $('#back').disabled=step<=1;
+  $('#info').textContent='Блок '+step+' из '+FORM_STEPS;
+  window.scrollTo(0,0);
+}
+function dots(k,from,to,cur,sub){
+  let h=`<div class="dots ${to-from>5?'wide':''}">`;
+  for(let i=from;i<=to;i++)h+=`<button type="button" class="dot" data-r="${k}" ${sub!=null?`data-sub="${sub}"`:''} data-v="${i}" aria-pressed="${cur===i}">${i}</button>`;
+  return h+'</div>';
+}
+function qHtml(q,i){
+  let b='';const v=A[q.k];
+  if(q.type==='text'){b=q.area?`<textarea class="field" rows="3" data-k="${q.k}" placeholder="${esc(q.ph||'Ваш ответ')}">${esc(v||'')}</textarea>`:`<input class="field" id="f-${q.k}" data-k="${q.k}" value="${esc(v||'')}" placeholder="${esc(q.ph||'Ваш ответ')}">`}
+  else if(q.type==='number'){b=`<input class="field num" type="number" min="0" inputmode="numeric" data-k="${q.k}" value="${esc(v||'')}" placeholder="№">`}
+  else if(q.type==='nums'){const sel=v||[];b=`<div class="dots chips">`+NUMS.map(n=>`<button type="button" class="dot" data-n="${q.k}" data-v="${n}" aria-pressed="${sel.includes(n)}">${n}</button>`).join('')+`</div>`}
+  else if(q.type==='rate'){const f=q.from??1,t=q.to??5;b=`<div class="legend"><span>${f} — ${esc(q.lo)}</span><span>${t} — ${esc(q.hi)}</span></div>${dots(q.k,f,t,v)}`}
+  else if(q.type==='scale'){const cur=v||{};b=q.items.map((it,j)=>`<div class="srow"><div class="l">${esc(it)}</div>${dots(q.k,1,5,cur[j],j)}</div>`).join('')}
+  else{
+    const multi=q.type==='multi'||q.multi;const sel=multi?(selOf(v)||[]):selOf(v);
+    const otherOn=multi?sel.includes(OTHER):sel===OTHER;
+    b=`<div class="opts">`+q.opts.concat([OTHER]).map(o=>{const on=multi?sel.includes(o):sel===o;return `<button type="button" class="opt ${multi?'multi':''} ${o===OTHER?'other':''}" aria-pressed="${on}" data-k="${q.k}" data-o="${esc(o)}" data-m="${multi?1:0}">${esc(o)}</button>`}).join('')+`</div>`+
+      `<input class="field" id="o-${q.k}" data-other="${q.k}" placeholder="Впишите свой ответ" value="${esc((v&&v.other)||'')}" ${otherOn?'':'hidden'}>`;
+  }
+  return `<div class="q"><div class="q-h"><div class="q-n">${i}</div><div><div class="q-t">${esc(q.q)}</div>${q.hint?`<div class="q-hint">${esc(q.hint)}</div>`:''}</div></div><div class="q-b">${b}</div></div>`;
+}
+function bind(v){
+  v.querySelectorAll('[data-k]').forEach(el=>{
+    if(el.tagName==='BUTTON'){el.addEventListener('click',()=>{
+      const k=el.dataset.k,o=el.dataset.o,m=el.dataset.m==='1',q=findQ(k);
+      if(m){const cur=selOf(A[k])||[];const sel=cur.includes(o)?cur.filter(x=>x!==o):cur.concat(o);
+        if(q.max&&sel.filter(x=>x!==OTHER).length>q.max)return;A[k]={...(A[k]||{}),sel}}
+      else A[k]={...(A[k]||{}),sel:selOf(A[k])===o?null:o};
+      save();const s=A[k].sel;
+      v.querySelectorAll(`button[data-k="${k}"]`).forEach(b=>b.setAttribute('aria-pressed',m?s.includes(b.dataset.o):s===b.dataset.o));
+      const oi=v.querySelector(`#o-${k}`);const on=m?s.includes(OTHER):s===OTHER;oi.hidden=!on;if(on&&o===OTHER)oi.focus();
+    })}
+    else el.addEventListener('input',()=>{A[el.dataset.k]=el.value;save()});
+  });
+  v.querySelectorAll('[data-other]').forEach(el=>el.addEventListener('input',()=>{const k=el.dataset.other;A[k]={...(A[k]||{}),other:el.value};save()}));
+  v.querySelectorAll('[data-n]').forEach(el=>el.addEventListener('click',()=>{
+    const k=el.dataset.n,n=+el.dataset.v;const cur=A[k]||[];A[k]=cur.includes(n)?cur.filter(x=>x!==n):cur.concat(n).sort((a,b)=>a-b);save();
+    el.setAttribute('aria-pressed',A[k].includes(n));
+  }));
+  v.querySelectorAll('[data-r]').forEach(el=>el.addEventListener('click',()=>{
+    const k=el.dataset.r,val=+el.dataset.v,sub=el.dataset.sub;
+    if(sub!=null)A[k]={...(A[k]||{}),[sub]:A[k]&&A[k][sub]===val?null:val};
+    else A[k]=A[k]===val?null:val;
+    save();
+    v.querySelectorAll(`[data-r="${k}"]${sub!=null?`[data-sub="${sub}"]`:''}`).forEach(b=>b.setAttribute('aria-pressed',+b.dataset.v===(sub!=null?A[k][sub]:A[k])));
+  }));
+}
+
+function cover(){
+  const started=Object.keys(A).some(k=>k!=='name');
+  const hi=tgUser&&tgUser.first_name?`<div class="hello">Привет, <b>${esc(tgUser.first_name)}</b></div>`:'';
+  return `<section class="dark"><div class="eyebrow">МАТРЁШКА · КЛУБ</div>
+  <div class="big">Анкета<em>ученика</em></div>${hi}
+  <p>Это не экзамен. Куратор хочет увидеть, где сейчас каждый из вас, и помочь сдвинуться с места именно там, где вы застряли. «Не смотрел» или «не понял» — нормальный ответ.</p>
+  <div class="path"><span><b>8</b> блоков</span><span><b>15–20</b> минут</span><span>выберите вариант или <b>впишите свой</b></span></div>
+  <button class="btn gold" id="start">${sent?'Изменить ответы':started?'Продолжить анкету':'Начать'}</button></section>`;
+}
+function done(){
+  if(sent)return `<section class="dark"><div class="eyebrow">ГОТОВО</div><div class="big">Спасибо<em>за честность</em></div>
+    <p>Ответы у куратора. Он разберёт их и напишет вам лично.</p>
+    <div class="col">${inTg?'<button class="btn gold" id="close">Закрыть</button>':''}<button class="btn ghost" id="edit">Изменить ответы</button></div></section>`;
+  return `<section class="dark"><div class="eyebrow">НЕ ОТПРАВИЛОСЬ</div><div class="big">Почти<em>готово</em></div>
+    <p>Отправить не получилось${sendErr?': '+esc(sendErr):''}. Попробуйте ещё раз. Если снова не выйдет, скопируйте ответы и пришлите куратору в личные сообщения.</p>
+    <div class="col"><button class="btn gold" id="retry">Отправить ещё раз</button><button class="btn ghost" id="copy">Скопировать ответы</button><button class="btn ghost" id="edit">Вернуться к ответам</button></div>
+    <div class="copybox" id="copytxt">${esc(plainText())}</div></section>`;
+}
+function bindDone(){
+  const c=$('#close');if(c)c.onclick=()=>tg.close();
+  $('#edit').onclick=()=>{step=1;closingConfirm(true);render()};
+  const r=$('#retry');if(r)r.onclick=()=>{r.disabled=true;r.textContent='Отправляю…';submit()};
+  const cp=$('#copy');if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(plainText());cp.textContent='Скопировано'}catch(e){const rg=document.createRange();rg.selectNodeContents($('#copytxt'));const s=getSelection();s.removeAllRanges();s.addRange(rg);cp.textContent='Выделено, скопируйте'}};
+}
+
+/* ---------- ответы в виде «вопрос → ответ» ---------- */
+function fmt(q,v){
+  if(v==null||v==='')return '';
+  if(q.type==='text'||q.type==='number'||q.type==='rate')return String(v);
+  if(q.type==='nums')return v.length?v.join(', '):'';
+  const sel=Array.isArray(v.sel)?v.sel:(v.sel?[v.sel]:[]);
+  return sel.map(x=>x===OTHER?('Свой: '+(v.other||'—')):x).join('; ');
+}
+function group(a){
+  const s=k=>selOf(a[k]);
+  const ls=s('lastStudy');
+  if(ls==='Месяц назад'||ls==='Больше месяца назад'||(a.burn!=null&&a.burn<=2))return 'Спящий';
+  const j=s('joined');
+  if((j==='Позже, догоняю по записям'||j==='Меньше месяца назад')&&s('hwHow')!=='Делаю сразу после лекции')return 'Догоняющий';
+  if(s('where')==='Пока не торгую, только учусь')return 'Теоретик';
+  const errs=((a.errors&&a.errors.sel)||[]).filter(x=>x!=='Ничего из этого').length;
+  if(errs>=2||s('month')==='В минусе'||(a.discipline!=null&&a.discipline<=3))return 'Практик с ошибками';
+  return 'Лидер';
+}
+function flatPairs(){
+  const out=[['Группа (авто)',group(A)]];
+  STEPS.forEach(S=>{if(!S.qs)return;S.qs.forEach(q=>{
+    if(q.type==='scale'){const c=A[q.k]||{};q.items.forEach((it,j)=>out.push(['Знание: '+it,c[j]!=null?c[j]:'']))}
+    else out.push([q.q,fmt(q,A[q.k])]);
+  })});
+  return out;
+}
+function plainText(){return flatPairs().map(p=>p[0]+'\n→ '+(p[1]===''?'нет ответа':p[1])).join('\n\n')}
+
+/* ---------- навигация и отправка ---------- */
+$('#back').onclick=()=>{if(step>1){step--;save();render()}};
+$('#next').onclick=()=>{
+  if(step===1&&!(A.name||'').trim()){const f=$('#f-name');f.focus();f.style.borderColor='var(--danger)';$('#info').textContent='Впишите имя';return}
+  if(step<STEPS.length-2){step++;save();render();return}
+  const b=$('#next');b.disabled=true;b.textContent='Отправляю…';submit();
+};
+async function submit(){
+  const body=JSON.stringify({initData:inTg?tg.initData:'',answers:flatPairs()});
+  sent=false;sendErr='';
+  if(!/^https:\/\/script\.google\.com\//.test(ENDPOINT)){sendErr='ссылка для отправки ещё не настроена'}
+  else{
+    let r=null;
+    try{r=await fetch(ENDPOINT,{method:'POST',body})}
+    catch(e){ // браузер не дал прочитать ответ: отправляем без чтения, таблица сама заменит повтор
+      try{await fetch(ENDPOINT,{method:'POST',mode:'no-cors',body});sent=true}catch(e2){sendErr='нет связи, проверьте интернет'}
+    }
+    if(r){try{const j=await r.json();if(j.ok)sent=true;else sendErr=j.error||'таблица не приняла ответ'}catch(e){sendErr='проверьте доступ к скрипту: «Все»'}}
+  }
+  const b=$('#next');b.disabled=false;
+  if(sent)closingConfirm(false);
+  try{if(inTg&&tg.isVersionAtLeast('6.1'))tg.HapticFeedback.notificationOccurred(sent?'success':'error')}catch(e){}
+  step=STEPS.length-1;save();render();
+}
+
+render();
+})();
+</script>
+</body>
+</html>
