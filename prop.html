@@ -133,22 +133,25 @@ function closingConfirm(on){try{if(inTg&&tg.isVersionAtLeast('6.2'))on?tg.enable
 const OTHER='Свой вариант';
 const STEPS=[
  {id:'cover'},
- {id:'learn',eb:'Шаг 1 · обучение и журналы',title:'Где вы сейчас',lead:'Все вопросы обязательные. Если подходящего варианта нет, нажмите «Свой вариант» и впишите ответ.',qs:[
+ {id:'about',eb:'Шаг 1 · о вас',title:'Кто вы и какой у вас опыт',lead:'Все вопросы обязательные. Если подходящего варианта нет, нажмите «Свой вариант» и впишите ответ.',qs:[
    {k:'nick',type:'text',q:'Ваш ник ТГ в клубе Матрёшка?',ph:'@ник'},
    {k:'time',type:'text',q:'Сколько времени обучаетесь в клубе Матрёшка?',ph:'Например, 3 месяца'},
-   {k:'backtest',type:'choice',q:'Сколько сделок занесено в журнал бектестов?',opts:['до 10','10-30','30-50']},
-   {k:'deals30',type:'choice',q:'Сколько сделок открыли за последние 30 дней?',opts:['До 100','До 200','Больше 200']},
-   {k:'live',type:'text',q:'Количество сделок в журнале торговли на живом графике?',ph:'Число или примерно'}
- ]},
- {id:'exp',eb:'Шаг 2 · опыт',title:'Ваш опыт в трейдинге',lead:'Пишите как есть: и удачи, и просадки одинаково важны.',qs:[
    {k:'exp',type:'text',q:'Ваш опыт в трейдинге?',ph:'Сколько лет или месяцев, как начинали',area:true},
    {k:'assets',type:'multi',q:'Опыт в торговле активами:',hint:'Можно выбрать несколько',opts:['Только золото','Форекс - валюты','Крипта','Акции']},
+   {k:'contact',type:'multi',q:'Каким образом с вами удобнее созвониться, номер, мессенджер?',hint:'Выберите способ и впишите номер или ник',opts:['Telegram','WhatsApp','Viber','Телефонный звонок'],extra:{k:'contactInfo',ph:'Номер телефона или ник в мессенджере'}}
+ ]},
+ {id:'journal',eb:'Шаг 2 · журналы и практика',title:'Что уже наторговано',lead:'Пишите как есть: и удачи, и просадки одинаково важны.',qs:[
+   {k:'backtest',type:'choice',q:'Сколько сделок занесено в журнал бектестов?',opts:['до 10','10-30','30-50','50-100','100 и более']},
+   {k:'deals30',type:'choice',q:'Сколько сделок открыли за последние 30 дней?',opts:['До 100','До 200','Больше 200']},
+   {k:'live',type:'text',q:'Количество сделок в журнале торговли на живом графике?',ph:'Число или примерно'},
    {k:'propExp',type:'text',q:'Ваш опыт в торговле на свой или проп-счёт?',ph:'Свой счёт, проп-компании, проходили ли челленджи',area:true},
    {k:'dd',type:'text',q:'Максимальная просадка в % к депозиту? Как выравнивали счёт, какой итог?',ph:'Например: −15%, снизил риск, вышел в ноль за 2 месяца',area:true}
  ]},
  {id:'ready',eb:'Шаг 3 · готовность',title:'Готовы к челленджу?',lead:'Система Матрёшка: риск 0,3% на сделку, до трёх стопов.',qs:[
+   {k:'together',type:'choice',q:'Хотели бы участвовать в совместном прохождении проп-челленджа?',opts:['Да','Нет','Пока не знаю']},
    {k:'readiness',type:'rate',q:'Оцените свою готовность в прохождении проп-челленджа по системе Матрёшка (0,3% риск, до 3-х стопов) от 1 до 10',from:1,to:10,lo:'не готов',hi:'полностью готов'},
    {k:'improve',type:'text',q:'Что по вашему поможет улучшить/повлияет на результаты в прохождении проп-челленджа?',area:true},
+   {k:'helpWant',type:'choice',q:'Хотели бы с кем-либо из клуба индивидуально обсудить ваши вопросы и получить помощь? С кем именно?',opts:['Да','Нет'],follow:{on:'Да',k:'helpWho',ph:'С кем именно? Ник или имя'}},
    {k:'publish',type:'choice',q:'Согласны на публикацию ваших результатов в отчёте проп-челленджа?',opts:['Да','Нет']},
    {k:'comments',type:'text',q:'Ваши комментарии, вопросы, пожелания',area:true}
  ]},
@@ -157,7 +160,7 @@ const STEPS=[
 const FORM_STEPS=STEPS.length-2;
 
 let A={},step=0,sent=false,sendErr='';
-const KEY='matr-prop-v1';
+const KEY='matr-prop-v2';
 try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&s.A){A=s.A;sent=!!s.sent;step=sent?0:Math.min(s.step||0,STEPS.length-2)}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify({A,step,sent}))}catch(e){}}
 if(tgUser&&!A.nick&&tgUser.username)A.nick='@'+tgUser.username;
@@ -174,7 +177,10 @@ function answered(q){
   const multi=q.type==='multi';const sel=multi?(selOf(v)||[]):selOf(v);
   if(multi?!sel.length:!sel)return false;
   const otherOn=multi?sel.includes(OTHER):sel===OTHER;
-  return !otherOn||!!(v.other&&v.other.trim());
+  if(otherOn&&!(v.other&&v.other.trim()))return false;
+  if(q.extra&&!(A[q.extra.k]&&String(A[q.extra.k]).trim()))return false;
+  if(q.follow&&sel===q.follow.on&&!(A[q.follow.k]&&String(A[q.follow.k]).trim()))return false;
+  return true;
 }
 
 function renderSteps(){let h='';for(let i=1;i<=FORM_STEPS;i++)h+=`<i class="${i<step?'done':i===step?'now':''}"></i>`;$('#steps').innerHTML=h}
@@ -209,6 +215,8 @@ function qHtml(q,i){
     const otherOn=multi?sel.includes(OTHER):sel===OTHER;
     b=`<div class="opts">`+q.opts.concat([OTHER]).map(o=>{const on=multi?sel.includes(o):sel===o;return `<button type="button" class="opt ${multi?'multi':''} ${o===OTHER?'other':''}" aria-pressed="${on}" data-k="${q.k}" data-o="${esc(o)}" data-m="${multi?1:0}">${esc(o)}</button>`}).join('')+`</div>`+
       `<input class="field" id="o-${q.k}" data-other="${q.k}" placeholder="Впишите свой ответ" value="${esc((v&&v.other)||'')}" ${otherOn?'':'hidden'}>`;
+    if(q.extra)b+=`<input class="field" id="f-${q.extra.k}" data-k="${q.extra.k}" data-owner="${q.k}" value="${esc(A[q.extra.k]||'')}" placeholder="${esc(q.extra.ph)}">`;
+    if(q.follow)b+=`<input class="field" id="f-${q.follow.k}" data-k="${q.follow.k}" data-owner="${q.k}" value="${esc(A[q.follow.k]||'')}" placeholder="${esc(q.follow.ph)}" ${sel===q.follow.on?'':'hidden'}>`;
   }
   return `<div class="q" id="q-${q.k}"><div class="q-h"><div class="q-n">${i}</div><div><div class="q-t">${esc(q.q)}<span class="req">*</span></div>${q.hint?`<div class="q-hint">${esc(q.hint)}</div>`:''}</div></div><div class="q-b">${b}</div><div class="miss-msg">Ответьте на этот вопрос</div></div>`;
 }
@@ -222,8 +230,9 @@ function bind(v){
       save();unmark(k);const s=A[k].sel;
       v.querySelectorAll(`button[data-k="${k}"]`).forEach(b=>b.setAttribute('aria-pressed',m?s.includes(b.dataset.o):s===b.dataset.o));
       const oi=v.querySelector(`#o-${k}`);const on=m?s.includes(OTHER):s===OTHER;oi.hidden=!on;if(on&&o===OTHER)oi.focus();
+      const q=findQ(k);if(q&&q.follow){const fi=v.querySelector(`#f-${q.follow.k}`);fi.hidden=s!==q.follow.on;if(!fi.hidden)fi.focus()}
     })}
-    else el.addEventListener('input',()=>{A[el.dataset.k]=el.value;save();unmark(el.dataset.k)});
+    else el.addEventListener('input',()=>{A[el.dataset.k]=el.value;save();unmark(el.dataset.owner||el.dataset.k)});
   });
   v.querySelectorAll('[data-other]').forEach(el=>el.addEventListener('input',()=>{const k=el.dataset.other;A[k]={...(A[k]||{}),other:el.value};save();unmark(k)}));
   v.querySelectorAll('[data-r]').forEach(el=>el.addEventListener('click',()=>{
@@ -237,8 +246,8 @@ function cover(){
   const hi=tgUser&&tgUser.first_name?`<div class="hello">Привет, <b>${esc(tgUser.first_name)}</b></div>`:'';
   return `<section class="dark"><div class="eyebrow">МАТРЁШКА · КЛУБ</div>
   <div class="big">Проп-<em>челлендж</em></div>${hi}
-  <p>С 4 ноября (среда) стартует первая волна проп-челленджа для участников клуба. Участие по желанию. Отвечайте честно, как есть: ответы помогут собрать всех участников и дать больше пользы в процессе.</p>
-  <div class="path"><span>старт <b>4 ноября</b></span><span>риск <b>0,3%</b></span><span>до <b>3</b> стопов</span></div>
+  <p>С 9 ноября (понедельник) стартует первая волна проп-челленджа для участников клуба. Участие по желанию. Отвечайте честно, как есть: ответы помогут собрать всех участников и дать больше пользы в процессе.</p>
+  <div class="path"><span>старт <b>9 ноября</b></span><span>риск <b>0,3%</b></span><span>до <b>3</b> стопов</span></div>
   <button class="btn gold" id="start">${sent?'Изменить ответы':started?'Продолжить':'Заполнить анкету'}</button></section>`;
 }
 function done(){
@@ -263,7 +272,12 @@ function fmt(q,v){
   const sel=Array.isArray(v.sel)?v.sel:(v.sel?[v.sel]:[]);
   return sel.map(x=>x===OTHER?('Свой: '+(v.other||'—')):x).join('; ');
 }
-function flatPairs(){const out=[];STEPS.forEach(S=>{if(S.qs)S.qs.forEach(q=>out.push([q.q,fmt(q,A[q.k])]))});return out}
+function flatPairs(){const out=[];STEPS.forEach(S=>{if(S.qs)S.qs.forEach(q=>{
+  let a=fmt(q,A[q.k]);
+  if(q.extra&&A[q.extra.k])a+=(a?' · ':'')+A[q.extra.k];
+  if(q.follow&&selOf(A[q.k])===q.follow.on&&A[q.follow.k])a+=': '+A[q.follow.k];
+  out.push([q.q,a]);
+})});return out}
 function plainText(){return flatPairs().map(p=>p[0]+'\n→ '+(p[1]===''?'нет ответа':p[1])).join('\n\n')}
 
 $('#back').onclick=()=>{if(step>1){step--;save();render()}};
