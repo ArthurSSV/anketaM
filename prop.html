@@ -98,6 +98,9 @@ input.num{width:120px;font-variant-numeric:tabular-nums}
 .miss-msg{display:none;color:var(--danger);font-size:13px;margin-top:10px}
 .q.miss{border-color:var(--danger)}
 .q.miss .miss-msg{display:block}
+.sub{margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)}
+.sub-t{font-size:15.5px;font-weight:600;line-height:1.35}
+.sub-b{margin-top:10px}
 </style>
 </head>
 <body>
@@ -153,7 +156,11 @@ const STEPS=[
    {k:'improve',type:'text',q:'Что по вашему поможет улучшить/повлияет на результаты в прохождении проп-челленджа?',area:true},
    {k:'helpWant',type:'choice',q:'Хотели бы с кем-либо из клуба индивидуально обсудить ваши вопросы и получить помощь? С кем именно?',opts:['Да','Нет'],follow:{on:'Да',k:'helpWho',ph:'С кем именно? Ник или имя'}},
    {k:'publish',type:'choice',q:'Согласны на публикацию ваших результатов в отчёте проп-челленджа?',opts:['Да','Нет']},
-   {k:'comments',type:'text',q:'Ваши комментарии, вопросы, пожелания',area:true}
+   {k:'comments',type:'text',q:'Ваши комментарии, вопросы, пожелания',area:true},
+   {k:'member',type:'choice',q:'Вы сейчас в клубе Матрёшка?',noOther:true,opts:['Да, я в клубе','Нет, был раньше и ушёл','Нет, ещё не был в клубе'],branch:{
+     'Нет, был раньше и ушёл':{k:'leftWhy',type:'multi',q:'Почему?',h:'Почему ушли из клуба?',hint:'Можно отметить несколько',opts:['Дорого','Не хватает времени на обучение','Не увидел результата в торговле','Не хватает поддержки и разборов','Сложно догнать материал']},
+     'Нет, ещё не был в клубе':{k:'attract',type:'text',q:'Что могло бы вас привлечь в клуб?',h:'Что могло бы привлечь в клуб?',area:true}
+   }}
  ]},
  {id:'done'}
 ];
@@ -168,7 +175,7 @@ if(tgUser&&!A.nick&&tgUser.username)A.nick='@'+tgUser.username;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const selOf=v=>v&&v.sel;
-function findQ(k){for(const S of STEPS)for(const q of (S.qs||[]))if(q.k===k)return q}
+function findQ(k){for(const S of STEPS)for(const q of (S.qs||[])){if(q.k===k)return q;if(q.branch)for(const sq of Object.values(q.branch))if(sq.k===k)return sq}}
 
 function answered(q){
   const v=A[q.k];
@@ -180,6 +187,7 @@ function answered(q){
   if(otherOn&&!(v.other&&v.other.trim()))return false;
   if(q.extra&&!(A[q.extra.k]&&String(A[q.extra.k]).trim()))return false;
   if(q.follow&&sel===q.follow.on&&!(A[q.follow.k]&&String(A[q.follow.k]).trim()))return false;
+  if(q.branch&&q.branch[sel]&&!answered(q.branch[sel]))return false;
   return true;
 }
 
@@ -206,6 +214,17 @@ function dots(k,from,to,cur){
   for(let i=from;i<=to;i++)h+=`<button type="button" class="dot" data-r="${k}" data-v="${i}" aria-pressed="${cur===i}">${i}</button>`;
   return h+'</div>';
 }
+function optsHtml(q,sel,multi,otherOn,owner){
+  const ow=owner?` data-owner="${owner}"`:'';
+  return `<div class="opts">`+q.opts.concat(q.noOther?[]:[OTHER]).map(o=>{const on=multi?sel.includes(o):sel===o;return `<button type="button" class="opt ${multi?'multi':''} ${o===OTHER?'other':''}" aria-pressed="${on}" data-k="${q.k}" data-o="${esc(o)}" data-m="${multi?1:0}"${ow}>${esc(o)}</button>`}).join('')+`</div>`+
+    (q.noOther?'':`<input class="field" id="o-${q.k}" data-other="${q.k}"${ow} placeholder="Впишите свой ответ" value="${esc((A[q.k]&&A[q.k].other)||'')}" ${otherOn?'':'hidden'}>`);
+}
+function subHtml(sq,owner){
+  const v=A[sq.k];let b;
+  if(sq.type==='text')b=`<textarea class="field" rows="3" id="f-${sq.k}" data-k="${sq.k}" data-owner="${owner}" placeholder="Ваш ответ">${esc(v||'')}</textarea>`;
+  else{const sel=selOf(v)||[];b=optsHtml(sq,sel,true,sel.includes(OTHER),owner)}
+  return `<div class="sub-t">${esc(sq.q)}<span class="req">*</span></div>${sq.hint?`<div class="q-hint">${esc(sq.hint)}</div>`:''}<div class="sub-b">${b}</div>`;
+}
 function qHtml(q,i){
   let b='';const v=A[q.k];
   if(q.type==='text'){b=q.area?`<textarea class="field" rows="3" id="f-${q.k}" data-k="${q.k}" placeholder="${esc(q.ph||'Ваш ответ')}">${esc(v||'')}</textarea>`:`<input class="field" id="f-${q.k}" data-k="${q.k}" value="${esc(v||'')}" placeholder="${esc(q.ph||'Ваш ответ')}">`}
@@ -213,9 +232,9 @@ function qHtml(q,i){
   else{
     const multi=q.type==='multi';const sel=multi?(selOf(v)||[]):selOf(v);
     const otherOn=multi?sel.includes(OTHER):sel===OTHER;
-    b=`<div class="opts">`+q.opts.concat([OTHER]).map(o=>{const on=multi?sel.includes(o):sel===o;return `<button type="button" class="opt ${multi?'multi':''} ${o===OTHER?'other':''}" aria-pressed="${on}" data-k="${q.k}" data-o="${esc(o)}" data-m="${multi?1:0}">${esc(o)}</button>`}).join('')+`</div>`+
-      `<input class="field" id="o-${q.k}" data-other="${q.k}" placeholder="Впишите свой ответ" value="${esc((v&&v.other)||'')}" ${otherOn?'':'hidden'}>`;
+    b=optsHtml(q,sel,multi,otherOn,'');
     if(q.extra)b+=`<input class="field" id="f-${q.extra.k}" data-k="${q.extra.k}" data-owner="${q.k}" value="${esc(A[q.extra.k]||'')}" placeholder="${esc(q.extra.ph)}">`;
+    if(q.branch)Object.keys(q.branch).forEach((val,bi)=>{b+=`<div class="sub" id="b-${q.k}-${bi}" ${sel===val?'':'hidden'}>${subHtml(q.branch[val],q.k)}</div>`});
     if(q.follow)b+=`<input class="field" id="f-${q.follow.k}" data-k="${q.follow.k}" data-owner="${q.k}" value="${esc(A[q.follow.k]||'')}" placeholder="${esc(q.follow.ph)}" ${sel===q.follow.on?'':'hidden'}>`;
   }
   return `<div class="q" id="q-${q.k}"><div class="q-h"><div class="q-n">${i}</div><div><div class="q-t">${esc(q.q)}<span class="req">*</span></div>${q.hint?`<div class="q-hint">${esc(q.hint)}</div>`:''}</div></div><div class="q-b">${b}</div><div class="miss-msg">Ответьте на этот вопрос</div></div>`;
@@ -227,14 +246,15 @@ function bind(v){
       const k=el.dataset.k,o=el.dataset.o,m=el.dataset.m==='1';
       if(m){const cur=selOf(A[k])||[];A[k]={...(A[k]||{}),sel:cur.includes(o)?cur.filter(x=>x!==o):cur.concat(o)}}
       else A[k]={...(A[k]||{}),sel:selOf(A[k])===o?null:o};
-      save();unmark(k);const s=A[k].sel;
+      save();unmark(el.dataset.owner||k);const s=A[k].sel;
       v.querySelectorAll(`button[data-k="${k}"]`).forEach(b=>b.setAttribute('aria-pressed',m?s.includes(b.dataset.o):s===b.dataset.o));
-      const oi=v.querySelector(`#o-${k}`);const on=m?s.includes(OTHER):s===OTHER;oi.hidden=!on;if(on&&o===OTHER)oi.focus();
-      const q=findQ(k);if(q&&q.follow){const fi=v.querySelector(`#f-${q.follow.k}`);fi.hidden=s!==q.follow.on;if(!fi.hidden)fi.focus()}
+      const oi=v.querySelector(`#o-${k}`);const on=m?s.includes(OTHER):s===OTHER;if(oi){oi.hidden=!on;if(on&&o===OTHER)oi.focus()}
+      const q=findQ(k);
+      if(q&&q.branch)Object.keys(q.branch).forEach((val,bi)=>{const d=v.querySelector(`#b-${k}-${bi}`);if(d)d.hidden=s!==val});if(q&&q.follow){const fi=v.querySelector(`#f-${q.follow.k}`);fi.hidden=s!==q.follow.on;if(!fi.hidden)fi.focus()}
     })}
     else el.addEventListener('input',()=>{A[el.dataset.k]=el.value;save();unmark(el.dataset.owner||el.dataset.k)});
   });
-  v.querySelectorAll('[data-other]').forEach(el=>el.addEventListener('input',()=>{const k=el.dataset.other;A[k]={...(A[k]||{}),other:el.value};save();unmark(k)}));
+  v.querySelectorAll('[data-other]').forEach(el=>el.addEventListener('input',()=>{const k=el.dataset.other;A[k]={...(A[k]||{}),other:el.value};save();unmark(el.dataset.owner||k)}));
   v.querySelectorAll('[data-r]').forEach(el=>el.addEventListener('click',()=>{
     const k=el.dataset.r,val=+el.dataset.v;A[k]=A[k]===val?null:val;save();unmark(k);
     v.querySelectorAll(`[data-r="${k}"]`).forEach(b=>b.setAttribute('aria-pressed',+b.dataset.v===A[k]));
@@ -277,6 +297,7 @@ function flatPairs(){const out=[];STEPS.forEach(S=>{if(S.qs)S.qs.forEach(q=>{
   if(q.extra&&A[q.extra.k])a+=(a?' · ':'')+A[q.extra.k];
   if(q.follow&&selOf(A[q.k])===q.follow.on&&A[q.follow.k])a+=': '+A[q.follow.k];
   out.push([q.q,a]);
+  if(q.branch)Object.entries(q.branch).forEach(([val,sq])=>out.push([sq.h,selOf(A[q.k])===val?fmt(sq,A[sq.k]):'']));
 })});return out}
 function plainText(){return flatPairs().map(p=>p[0]+'\n→ '+(p[1]===''?'нет ответа':p[1])).join('\n\n')}
 
